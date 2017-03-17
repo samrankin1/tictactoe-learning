@@ -1,7 +1,7 @@
 
 VALID_COLUMNS		 = ('a', 'b', 'c')
 VALID_ROWS			 = ('1', '2', '3')
-VALID_TILE_STATES	 = ('b', 'x', 'o') # b = blank
+VALID_TILE_STATES	 = ('b', 'i', 'o') # b = blank, i = controlled by me (X/O), o = controlled by opponent (X/O)
 
 DEFAULT_TILE_STATE	 = 'b'
 
@@ -49,8 +49,8 @@ class Board:
 			self.board_state[(column + row)] # set the state at the given tile
 			return True # success # TODO: make sure that changes were actually made
 
-def get_legal_moves(board):
-	'''Given a Board object, returns a list of tuples in the format (column, row) of legal moves'''
+def get_legal_moves(side, board):
+	'''Given a Board object, returns a list of tuples in the format (column, row, tile_state) of legal moves'''
 	# Note: for tic-tac-toe, legal moves are independent of which side is making the move; this is different for other games
 	result = []
 	for column in VALID_COLUMNS:
@@ -59,3 +59,19 @@ def get_legal_moves(board):
 				result.append((column, row))
 
 	return result
+
+def get_next_move(side, board):
+	legal_move = get_legal_moves(board)
+	# known_moves = get_known_moves_for_board(board) # retrieve previously experienced moves with this Board-state from the database
+	# move_weights = {}
+	for move in legal_moves: # TODO: move -> (column, row)
+		# if move in known_moves
+			# assign weight according to previous experience (confidence interval? give respect to both win-rate and count)
+			# move_weights[move] = weight
+		# else
+			# define default weight for unknown move (curiousness factor)
+			# note: don't make this too aggressive, or the program will always be playing against a sloppy opponent
+			# move_weights[move] = weight
+
+	# randomly select a move from move_weights, taking into consideration their weighted probabilities
+	# return move
