@@ -49,8 +49,8 @@ class Board:
 			self.board_state[(column + row)] # set the state at the given tile
 			return True # success # TODO: make sure that changes were actually made
 
-def get_legal_moves(side, board):
-	'''Given a Board object, returns a list of tuples in the format (column, row, tile_state) of legal moves'''
+def get_legal_moves(board):
+	'''Given a Board object, returns a list of tuples in the format (column, row) of legal moves'''
 	# Note: for tic-tac-toe, legal moves are independent of which side is making the move; this is different for other games
 	result = []
 	for column in VALID_COLUMNS:
