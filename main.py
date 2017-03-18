@@ -60,18 +60,27 @@ def get_legal_moves(board):
 
 	return result
 
+def get_weight(wins, losses, draws):
+	'''Calculate the probabilistic weight of a move, given previous experience with it'''
+	# assign weight according to previous experience (confidence interval? give respect to both results and count)
+	# also: define default weight for no previous knowledge (curiousness factor)
+	# note: if this algorithm is too 'curious', the program will learn to play against sloppy opponents
+	pass # TODO: implement
+
+def select_move(move_weights):
+	'''Randomly select a move from move_weights, taking into consideration their weighted probabilities'''
+	pass # TODO: implement
+
 def get_next_move(side, board):
 	legal_move = get_legal_moves(board)
-	# known_moves = get_known_moves_for_board(board) # retrieve previously experienced moves with this Board-state from the database
+	# known_moves = database.retrieve_move_records(board) # retrieve previously experienced moves with this Board-state and their win-loss-draw records
+	# known_moves format: {(column, row): (wins, losses, draws), ...}
 	# move_weights = {}
-	for move in legal_moves: # TODO: move -> (column, row)
+	for move in legal_moves: # move = (column, row)
 		# if move in known_moves
-			# assign weight according to previous experience (confidence interval? give respect to both win-rate and count)
-			# move_weights[move] = weight
+			# wins, losses, draws = known_moves[move]
+			# move_weights[move] = get_weight(wins = known_move.wins, losses = known_move.losses, draws = known_move.draws)
 		# else
-			# define default weight for unknown move (curiousness factor)
-			# note: don't make this too aggressive, or the program will always be playing against a sloppy opponent
-			# move_weights[move] = weight
+			# move_weights[move] = get_weight(wins = 0, losses = 0, draws = 0)
 
-	# randomly select a move from move_weights, taking into consideration their weighted probabilities
-	# return move
+	# return select_move(move_weights)
