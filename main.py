@@ -1,3 +1,4 @@
+from enum import Enum
 
 VALID_COLUMNS		 = ('a', 'b', 'c')
 VALID_ROWS			 = ('1', '2', '3')
@@ -5,19 +6,32 @@ VALID_TILE_STATES	 = ('b', 'i', 'o') # b = blank, i = controlled by me (X/O), o 
 
 DEFAULT_TILE_STATE	 = 'b'
 
+class Result(Enum):
+	WIN = 0
+	LOSS = 1
+	DRAW = 2
+
 class Board:
 
 	def __init__(initial_state):
 		if initial_state is None:
-			self.board_state = []
+			self.board_state = {}
 		else:
 			self.board_state = initial_state # TODO: verify
 
 	@staticmethod
 	def from_board_string(board_string):
+		# separate into groups of three chars
+		# e.g.: ["a2i", "b2o", "b3o"]
+		# reconstruct the board_state dict
+		# e.g.: {"a2": "i", "b2": "o", "b3": "o"}
 		pass # TODO: restore Board state from a string returned by to_board_string()
 
 	def to_board_string(self):
+		# sort self.board_state by key
+		# e.g.: {"a2": "i", "b2": "o", "b3": "o"}
+		# merge into separatorless string
+		# e.g.: a2ib2ob3o
 		pass # TODO: generate a string representing this Board's state
 
 	def get_tile_state(self, column, row):
@@ -46,7 +60,7 @@ class Board:
 			except KeyError: # if the tile at the row and column specified is already blank
 				return False # failure (no changes made)
 		else:
-			self.board_state[(column + row)] # set the state at the given tile
+			self.board_state[(column + row)] = tile_state # set the state at the given tile
 			return True # success # TODO: make sure that changes were actually made
 
 def get_legal_moves(board):
