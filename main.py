@@ -13,7 +13,7 @@ class Result(Enum):
 
 class Board:
 
-	def __init__(initial_state):
+	def __init__(self, initial_state = None):
 		if initial_state is None:
 			self.board_state = {}
 		else:
@@ -32,7 +32,13 @@ class Board:
 		# e.g.: {"a2": "i", "b2": "o", "b3": "o"}
 		# merge into separatorless string
 		# e.g.: a2ib2ob3o
-		pass # TODO: generate a string representing this Board's state
+		sorted_keys = sorted(self.board_state)
+
+		result = ""
+		for key in sorted_keys:
+			result += (key + self.board_state[key]) # append the concatenated key and value to the result string
+
+		return result
 
 	def get_tile_state(self, column, row):
 		if column not in VALID_COLUMNS:
@@ -96,5 +102,6 @@ def get_next_move(side, board):
 			# move_weights[move] = get_weight(wins = known_move.wins, losses = known_move.losses, draws = known_move.draws)
 		# else
 			# move_weights[move] = get_weight(wins = 0, losses = 0, draws = 0)
+		pass # TODO: implement
 
 	# return select_move(move_weights)
