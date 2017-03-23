@@ -1,6 +1,10 @@
+import random
+
 from enum import Enum
 
 import stats
+
+from database import DatabaseManager
 
 VALID_COLUMNS		 = ('a', 'b', 'c')
 VALID_ROWS			 = ('1', '2', '3')
@@ -75,16 +79,19 @@ class Board:
 			self.board_state[(column + row)] = tile_state # set the state at the given tile
 			return True # success # TODO: make sure that changes were actually made
 
-def get_legal_moves(board):
-	'''Given a Board object, returns a list of tuples in the format (column, row) of legal moves'''
-	# Note: for tic-tac-toe, legal moves are independent of which side is making the move; this is different for other games
-	result = []
-	for column in VALID_COLUMNS:
-		for row in VALID_ROWS:
-			if board.get_tile_state(column, row) == DEFAULT_TILE_STATE:
-				result.append((column, row))
+	def get_legal_moves(self):
+		'''Return a list of tuples in the format (column, row) of legal moves for this board'''
+		# Note: for tic-tac-toe, legal moves are independent of which side is making the move; this is different for other games
+		result = []
+		for column in VALID_COLUMNS:
+			for row in VALID_ROWS:
+				if self.get_tile_state(column, row) == DEFAULT_TILE_STATE:
+					result.append((column, row))
 
-	return result
+		return result
+
+	def get_winner(self):
+		
 
 def get_weight(wins, losses, draws):
 	'''Calculate the probabilistic weight of a move, given previous experience with it'''
@@ -98,9 +105,9 @@ def get_weight(wins, losses, draws):
 
 def select_move(move_weights):
 	'''Randomly select a move from move_weights, taking into consideration their weighted probabilities'''
-	pass # TODO: implement
+	return random.choices(list(move_weights.keys()), weights = move_weights.values())[0] # requires Python >=3.6
 
-def get_next_move(side, board):
+def get_next_move(side, board, database):
 	legal_move = get_legal_moves(board)
 	known_moves = database.retrieve_move_records(board) # retrieve previously experienced moves with this Board-state and their win-loss-draw records
 	# known_moves format: {(column, row): (wins, losses, draws), ...}
@@ -112,4 +119,14 @@ def get_next_move(side, board):
 		else:
 			move_weights[move] = get_weight(wins = 0, losses = 0, draws = 0)
 
-	# return select_move(move_weights)
+	return select_move(move_weights)
+
+def main():
+	database = DatabaseManager()
+
+	player1 = Board()
+	player2 = Board()
+
+	# TODO
+
+main()
