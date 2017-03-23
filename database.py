@@ -18,16 +18,19 @@ INITIALIZE_TABLE_SQL		 = ("CREATE TABLE IF NOT EXISTS move_records ( "
 								"PRIMARY KEY (`board`, `move_column`, `move_row`)"
 								" )ENGINE=InnoDB")
 
-INCREMENT_MOVE_WINS_SQL		 = ("REPLACE INTO move_records(`board`, `move_column`, `move_row`, `wins`) "
-								"VALUES (%(board)s, %(move_column)s, %(move_row)s, (`wins` + 1))")
+INCREMENT_MOVE_WINS_SQL		 = ("INSERT INTO move_records(`board`, `move_column`, `move_row`, `wins`) "
+								"VALUES (%(board)s, %(move_column)s, %(move_row)s, 1) "
+								"ON DUPLICATE KEY UPDATE `wins` = (`wins` + 1)")
 
-INCREMENT_MOVE_LOSSES_SQL	 = ("REPLACE INTO move_records(`board`, `move_column`, `move_row`, `losses`) "
-								"VALUES (%(board)s, %(move_column)s, %(move_row)s, (`losses` + 1))")
+INCREMENT_MOVE_LOSSES_SQL	 = ("INSERT INTO move_records(`board`, `move_column`, `move_row`, `losses`) "
+								"VALUES (%(board)s, %(move_column)s, %(move_row)s, 1) "
+								"ON DUPLICATE KEY UPDATE `losses` = (`losses` + 1)")
 
-INCREMENT_MOVE_DRAWS_SQL	 = ("REPLACE INTO move_records(`board`, `move_column`, `move_row`, `draws`) "
-								"VALUES (%(board)s, %(move_column)s, %(move_row)s, (`draws` + 1))")
+INCREMENT_MOVE_DRAWS_SQL	 = ("INSERT INTO move_records(`board`, `move_column`, `move_row`, `draws`) "
+								"VALUES (%(board)s, %(move_column)s, %(move_row)s, 1) "
+								"ON DUPLICATE KEY UPDATE `draws` = (`draws` + 1)")
 
-GET_MOVES_FOR_BOARD_SQL		 = "SELECT `move_column`, `move_row`, `wins, `losses`, `draws` FROM move_records WHERE `board` = %(board)s"
+GET_MOVES_FOR_BOARD_SQL		 = "SELECT `move_column`, `move_row`, `wins`, `losses`, `draws` FROM move_records WHERE `board` = %(board)s"
 
 class DatabaseManager:
 	def __init__(self):
@@ -66,16 +69,14 @@ class DatabaseManager:
 
 	def retrieve_move_records(self, board):
 		'''Retrieve all win-loss-draw records associated with moves related to the given Board-state'''
-		# return format: {(column, row): (wins, losses, draws), ...}
+		# return format: {(column, row): (wins, losses, draws), ...} # NOTE: this could be a list of tuples?
 		values = {
-			'board': board
+			'board': board.to_board_string()
 		}
 
 		with self.connection.cursor() as cursor:
-			results = cursor.execute(SELECT_MOVES_FOR_BOARD_SQL, values).fetchall()
-			print(results) # TODO: debug
-			# return {(column, row): (wins, losses, draws) for (column, row, wins, losses, draws) in results} # TODO: catch exceptions, return success
-
+			results = cursor.execute(GET_MOVES_FOR_BOARD_SQL, values)
+			return {(result['move_column'], result['move_row']): (result['wins'], result['losses'], result['draws']) for result in cursor.fetchall()} # TODO: catch exceptions, return success
 
 	def close(self):
 		self.connection.close() # close the underlying database connection
