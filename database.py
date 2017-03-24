@@ -1,7 +1,7 @@
 import pymysql
 import pymysql.cursors
 
-from main import Result
+import main
 
 MYSQL_HOST = 'localhost'
 MYSQL_DB = 'tictactoe'
@@ -50,18 +50,19 @@ class DatabaseManager:
 
 		# TODO: database sanity checks
 
-	def increment_move_record(self, board, move_column, move_row, result):
+	def increment_move_record(self, board_string, move_column, move_row, result):
 		'''Increment a record in the database for the given board, column, and row for the given result'''
 		values = {
-			'board': board.to_board_string(),
+			'board': board_string,
 			'move_column': move_column,
 			'move_row': move_row,
 		}
 
+		print(result) # TODO: debug
 		query = {
-			Result.WIN:		 INCREMENT_MOVE_WINS_SQL,
-			Result.LOSS:	 INCREMENT_MOVE_LOSSES_SQL,
-			Result.DRAW:	 INCREMENT_MOVE_DRAWS_SQL
+			main.Result.WIN:		 INCREMENT_MOVE_WINS_SQL,
+			main.Result.LOSS:	 INCREMENT_MOVE_LOSSES_SQL,
+			main.Result.DRAW:	 INCREMENT_MOVE_DRAWS_SQL
 		}[result] # get the correct incrementing SQL query based on the result
 
 		with self.connection.cursor() as cursor:

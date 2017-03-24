@@ -2,9 +2,8 @@ import random
 
 from enum import Enum
 
-import stats
-
 from database import DatabaseManager
+import stats
 
 VALID_COLUMNS		 = ('a', 'b', 'c')
 VALID_ROWS			 = ('1', '2', '3')
@@ -26,6 +25,8 @@ class Board:
 			self.board_state = {}
 		else:
 			self.board_state = initial_state # TODO: verify
+
+		self.move_history = []
 
 	@staticmethod
 	def from_board_string(board_string):
@@ -58,12 +59,14 @@ class Board:
 		except KeyError:
 			return DEFAULT_TILE_STATE
 
-	# TODO: remember previous board state when setting a new move for the player
-	# possible strategy:
-	# set_tile_state -> _set_tile_state; expose set_player_move() and set_opponent_move(),
-	# both methods update the board, but have set_player_move() archive the board state and move before changing the internal board_state
+	def set_player_move(self, column, row):
+		self.move_history.append((self.to_board_string(), (column, row))) # append to the move history in the format (board_string, (column, row))
+		self._set_tile_state(column, row, 'i') # set the tile to the player's symbol
 
-	def set_tile_state(self, column, row, tile_state):
+	def set_opponent_move(self, column, row):
+		self._set_tile_state(column, row, 'o') # set the tile to the opponent's symbol
+
+	def _set_tile_state(self, column, row, tile_state):
 		assert (column in VALID_COLUMNS)
 		assert (row in VALID_ROWS)
 		assert (tile_state in VALID_TILE_STATES)
@@ -78,6 +81,9 @@ class Board:
 			self.board_state[(column + row)] = tile_state # set the state at the given tile
 			return True # success # TODO: make sure that changes were actually made
 
+	def get_move_history(self):
+		return self.move_history
+
 	def get_legal_moves(self):
 		'''Return a list of tuples in the format (column, row) of legal moves for this board'''
 		# Note: for tic-tac-toe, legal moves are independent of which side is making the move; this is different for other games
@@ -90,33 +96,34 @@ class Board:
 		return result
 
 	def get_result(self):
-		# TODO: check for draw here
-
 		results = { # define results depending on which tile state 'won' the board
 			'i': Result.WIN,
 			'o': Result.LOSS
 		}
 
 		for column in VALID_COLUMNS: # check for vertical wins
-			column_states = [self.get_tile_state(row, column) for row in VALID_ROWS]
+			column_states = [self.get_tile_state(column, row) for row in VALID_ROWS]
 			if all(state == column_states[0] for state in column_states): # if all the states for this column are the same
 				state = column_states[0] # the first column state is the state of each tile in this column
 				if state != DEFAULT_TILE_STATE: # if the column is filled out with a non-default state (i.e. not just blank)
 					return results[state] # return the winner of the board based on the dict
 
 		for row in VALID_ROWS: # check for horizontal wins
-			row_states = [self.get_tile_state(row, column) for column in VALID_COLUMNS]
+			row_states = [self.get_tile_state(column, row) for column in VALID_COLUMNS]
 			if all(state == row_states[0] for state in row_states):
 				state = row_states[0]
 				if state != DEFAULT_TILE_STATE:
 					return results[state]
 
 		for case in SPECIAL_WIN_CASES: # check for special case wins (diagonals as of current revision)
-			case_states = [self.get_tile_state(row, column) for (row, column) in case]
+			case_states = [self.get_tile_state(column, row) for (column, row) in case]
 			if all(state == case_states[0] for state in case_states):
 				state = case_states[0]
 				if state != DEFAULT_TILE_STATE:
 					return results[state]
+
+		if len(self.board_state) == (len(VALID_COLUMNS) * len(VALID_ROWS)): # if there are as many tiles set as there are tiles on the board (i.e. board is full but no winner)
+			return Result.DRAW # the match is a draw
 
 		return None # no result for this board in its current state
 
@@ -138,7 +145,7 @@ def select_move(move_weights):
 	return random.choices(list(move_weights.keys()), weights = move_weights.values())[0] # requires Python >=3.6
 
 def get_next_move(board, database):
-	legal_move = get_legal_moves(board)
+	legal_moves = board.get_legal_moves()
 	known_moves = database.retrieve_move_records(board) # retrieve previously experienced moves with this Board-state and their win-loss-draw records
 	# known_moves format: {(column, row): (wins, losses, draws), ...}
 	move_weights = {}
@@ -151,36 +158,51 @@ def get_next_move(board, database):
 
 	return select_move(move_weights)
 
-def dump_move_data(board, result):
-	# write all the archived board states and moves to the database, with the given result attached
-	# TODO: archive previous moves are the Board level first
-	pass # TODO
+def dump_move_history(board, result, database):
+	'''Record all the archived board states and moves to the database, with the given result attached'''
+	move_history = board.get_move_history() # get the board's move history in the format [(board_string, (column, row)), ...]
+	for (board_string, (column, row)) in move_history:
+		database.increment_move_record(board_string, column, row, result) # TODO: URGENT: optimize this with a batch query at the DatabaseManager level
 
-def handle_check_for_win(player1, player2):
-	match_result = player1_board.get_result()  # do a win condition check from Player 1's perspective
+def handle_check_for_win(player1, player2, database):
+	match_result = player1.get_result()  # do a win condition check from Player 1's perspective
 	if match_result is not None:
 		if match_result == Result.WIN: #  if Player 1 won this match
-			# dump_move_data(player1, Result.WIN)
-			# dump_move_data(player2, Result.LOSS)
-			pass # TODO
+			print("Player 1 wins!") # TODO: remove debug message for speed
+			dump_move_history(player1, Result.WIN, database)
+			dump_move_history(player2, Result.LOSS, database)
+			return True # the match is complete
 		elif match_result == Result.DRAW:
-			# dump_move_data(player1, Result.DRAW)
-			# dump_move_data(player2, Result.DRAW)
-			pass # TODO
+			print("Player 1 and Player 2 draw!") # TODO: remove debug message for speed
+			dump_move_history(player1, Result.DRAW, database)
+			dump_move_history(player2, Result.DRAW, database)
+			return True
 		elif match_result == Result.LOSS:
-			# dump_move_data(player1, Result.LOSS)
-			# dump_move_data(player2, Result.WIN)
-			pass # TODO
+			print("Player 2 wins!") # TODO: remove debug message for speed
+			dump_move_history(player1, Result.LOSS, database)
+			dump_move_history(player2, Result.WIN, database)
+			return True
+	return False # the match is not complete yet
 
 def main():
-	database = DatabaseManager()
+	database = db.DatabaseManager()
 
 	for i in range(100): # play 100 matches
 		player1 = Board()
 		player2 = Board()
 		while True:
 			player_1_move = get_next_move(player1, database) # let the AI select Player 1's move
-			player1.set_tile_state(*player_1_move, 'i') # apply the move to Player 1's board
-			player2.set_tile_state(*player_1_move, 'o') # apply the move to Player 2's board as well (this time as opponent)
+			player1.set_player_move(*player_1_move) # apply the move to Player 1's board
+			player2.set_opponent_move(*player_1_move) # apply the move to Player 2's board as well (this time as opponent)
+
+			if handle_check_for_win(player1, player2, database): # if the match is complete after this move
+				break # end the match, start a new one if applicable
+
+			player_2_move = get_next_move(player2, database) # let the AI select Player 2's move for its turn
+			player1.set_opponent_move(*player_2_move)
+			player2.set_player_move(*player_2_move)
+
+			if handle_check_for_win(player1, player2, database):
+				break
 
 main()
