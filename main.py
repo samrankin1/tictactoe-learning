@@ -19,7 +19,8 @@ INITIALIZE_TABLE_SQL		 = ("CREATE TABLE IF NOT EXISTS move_records ( "
 								"`wins` INT UNSIGNED NOT NULL DEFAULT 0, "
 								"`losses` INT UNSIGNED NOT NULL DEFAULT 0, "
 								"`draws` INT UNSIGNED NOT NULL DEFAULT 0, "
-								"PRIMARY KEY (`board`, `move_column`, `move_row`)"
+								"PRIMARY KEY (`board`, `move_column`, `move_row`), " # ~90% of queries will use these unique parameters
+								"INDEX (`board`)" # the other ~10% of queries will be SELECT statements with `board` in a WHERE clause
 								" )ENGINE=InnoDB")
 
 INCREMENT_MOVE_WINS_SQL		 = ("INSERT INTO move_records(`board`, `move_column`, `move_row`, `wins`) "
@@ -268,7 +269,7 @@ def handle_check_for_win(player1, player2, database):
 def main():
 	database = DatabaseManager()
 
-	for i in range(1000): # play 1000 matches
+	for i in range(100): # play 100 matches TODO: command-line argument
 		player1 = Board()
 		player2 = Board()
 		while True:
